@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+    <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+    <title>Yaochat</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="titlebar">
+      <div class="titlebar-left">
+        <span class="titlebar-text">Yaochat</span>
+        <div id="horizontal-tabs-container"></div>
+      </div>
+      <div class="titlebar-right">
+        <svg id="settings-btn" class="settings-icon" viewBox="0 0 24 24" width="16" height="16">
+          <path fill="currentColor" d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+        </svg>
+      </div>
+    </div>
+    <div class="app-layout">
+      <div class="sidebar" id="sidebar">
+        <!-- Tabs will be dynamically injected here -->
+      </div>
+      <div class="main-content" id="main-content">
+        <!-- Webviews will be injected here -->
+      </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div id="settings-view" class="settings-modal">
+      <div class="settings-header">
+        <h2>Settings</h2>
+        <button id="close-settings">×</button>
+      </div>
+      <div class="settings-group">
+        <h3>Layout Options</h3>
+        <label><input type="checkbox" id="toggle-horizontal-tabs"> Use Horizontal Tabs</label>
+      </div>
+      
+      <div class="settings-group">
+        <h3>Apps</h3>
+        <label><input type="checkbox" class="app-toggle" data-app="discord"> Enable Discord</label>
+        <label><input type="checkbox" class="app-toggle" data-app="cinny"> Enable Cinny</label>
+        <label><input type="checkbox" class="app-toggle" data-app="stoat"> Enable Stoat</label>
+        <label><input type="checkbox" class="app-toggle" data-app="fluxer"> Enable Fluxer</label>
+        <label><input type="checkbox" class="app-toggle" data-app="telegram_k"> Enable Telegram K (web)</label>
+        <label><input type="checkbox" class="app-toggle" data-app="telegram_a"> Enable Telegram A (web)</label>
+        <label><input type="checkbox" class="app-toggle" data-app="tg_native"> Enable Telegram (native launch)</label>
+        <label><input type="checkbox" class="app-toggle" data-app="tg_embedded"> Enable Telegram (embed attempt ⚠️)</label>
+      </div>
+    </div>
+    <script src="./renderer.js"></script>
+  </body>
+</html>
