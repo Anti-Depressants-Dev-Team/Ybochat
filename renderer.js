@@ -120,33 +120,21 @@ function renderApps() {
     wv.src = cfg.url;
     wv.setAttribute('useragent', UA);
     if (cfg.inject) {
-      wv.setAttribute('nodeintegration', '');
+      wv.setAttribute('partition', 'persist:vencord');
     }
     mainContent.appendChild(wv);
 
-    // Inject userscript for modded apps (e.g. Vencord)
-    // Fetch via main process (bypasses CSP), inject when DOM is ready
+    // Inject Vencord — Discord CSP is stripped for the 'persist:vencord' partition
     if (cfg.inject) {
-      (async () => {
-        try {
-          const code = await window.electronAPI.fetchUrl(cfg.inject);
-          if (!code) return;
-          let injected = false;
-          wv.addEventListener('did-finish-load', () => {
-            if (!injected) {
-              injected = true;
-              wv.executeJavaScript(code).catch(e => console.error('Vencord exec:', e));
-            }
-          });
-          // Also try on dom-ready for faster startup
-          wv.addEventListener('dom-ready', () => {
-            if (!injected) {
-              injected = true;
-              wv.executeJavaScript(code).catch(e => console.error('Vencord exec:', e));
-            }
-          });
-        } catch (e) { console.error('Injection failed:', e); }
-      })();
+      wv.addEventListener('dom-ready', () => {
+        wv.executeJavaScript(`
+          (function(){
+            var s=document.createElement('script');
+            s.src='${cfg.inject}';
+            document.head.appendChild(s);
+          })();
+        `).catch(() => {});
+      });
     }
   });
 

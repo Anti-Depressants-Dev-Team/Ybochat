@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, session } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 
@@ -24,6 +24,19 @@ const createWindow = () => {
 };
 
 app.whenReady().then(() => {
+  // Strip Discord's CSP so Vencord can inject and load resources
+  const venSes = session.fromPartition('persist:vencord');
+  venSes.webRequest.onHeadersReceived((details, cb) => {
+    if (details.url.includes('discord.com') || details.url.includes('jsdelivr.net')) {
+      const h = { ...details.responseHeaders };
+      delete h['content-security-policy'];
+      delete h['content-security-policy-report-only'];
+      cb({ responseHeaders: h });
+    } else {
+      cb({ responseHeaders: details.responseHeaders });
+    }
+  });
+
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
