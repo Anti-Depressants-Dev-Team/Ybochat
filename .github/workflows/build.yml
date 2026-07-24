@@ -4,11 +4,13 @@ on:
   push:
     branches: [main]
     tags: ['v*']
-  pull_request:
-    branches: [main]
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
-  build-windows:
+  build:
     runs-on: windows-latest
 
     steps:
@@ -21,19 +23,19 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run icon
+      - run: node scripts/make-icon.js
 
-      - run: npm run build:win
+      - name: Build installer
+        run: npx electron-builder --win --publish=never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ybochat-windows
+          name: ybochat-installer
           path: dist/*.exe
 
-      # Create a GitHub Release and attach the exe when a tag is pushed
-      - name: Create Release
+      - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
