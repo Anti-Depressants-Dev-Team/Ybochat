@@ -37,6 +37,7 @@
       "index.html",
       "styles.css",
       "chat.png",
+      "vencord-preload.js",
       "scripts/**",
       "node_modules/**"
     ]
