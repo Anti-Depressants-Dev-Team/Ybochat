@@ -1,6 +1,6 @@
 {
   "name": "ybochat",
-  "version": "1.3.5",
+  "version": "1.4.0",
   "description": "Multi-platform chat client",
   "main": "main.js",
   "scripts": {
@@ -29,6 +29,11 @@
     "win": {
       "target": "portable",
       "icon": "build/icon.ico"
+    },
+    "linux": {
+      "target": ["deb", "rpm", "AppImage"],
+      "icon": "build/icons",
+      "category": "Network"
     },
     "files": [
       "main.js",

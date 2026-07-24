@@ -4,8 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const input = path.join(__dirname, '..', 'chat.png');
-const outDir = path.join(__dirname, '..', 'build');
-const outFile = path.join(outDir, 'icon.ico');
+const buildDir = path.join(__dirname, '..', 'build');
+const iconDir = path.join(buildDir, 'icons');
 
 async function main() {
   if (!fs.existsSync(input)) {
@@ -13,18 +13,21 @@ async function main() {
     process.exit(1);
   }
 
-  fs.mkdirSync(outDir, { recursive: true });
+  fs.mkdirSync(iconDir, { recursive: true });
 
+  // Windows .ico
   const sizes = [16, 32, 48, 64, 128, 256];
-  const pngs = await Promise.all(
-    sizes.map(size =>
-      sharp(input).resize(size, size).png().toBuffer()
-    )
-  );
-
+  const pngs = await Promise.all(sizes.map(s => sharp(input).resize(s, s).png().toBuffer()));
   const ico = await toIco(pngs);
-  fs.writeFileSync(outFile, ico);
-  console.log(`Created ${outFile} (${sizes.join(', ')}px)`);
+  fs.writeFileSync(path.join(buildDir, 'icon.ico'), ico);
+  console.log(`Created build/icon.ico`);
+
+  // Linux icons (electron-builder expects PNGs in build/icons/)
+  const linuxSizes = [16, 32, 48, 64, 128, 256, 512];
+  for (const s of linuxSizes) {
+    await sharp(input).resize(s, s).png().toFile(path.join(iconDir, `${s}x${s}.png`));
+  }
+  console.log(`Created build/icons/ (${linuxSizes.join(', ')}px)`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
