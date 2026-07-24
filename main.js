@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 
@@ -24,19 +24,6 @@ const createWindow = () => {
 };
 
 app.whenReady().then(() => {
-  // Strip Discord's CSP so Vencord can inject and load resources
-  const venSes = session.fromPartition('persist:vencord');
-  venSes.webRequest.onHeadersReceived((details, cb) => {
-    if (details.url.includes('discord.com') || details.url.includes('jsdelivr.net')) {
-      const h = { ...details.responseHeaders };
-      delete h['content-security-policy'];
-      delete h['content-security-policy-report-only'];
-      cb({ responseHeaders: h });
-    } else {
-      cb({ responseHeaders: details.responseHeaders });
-    }
-  });
-
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
@@ -58,27 +45,4 @@ ipcMain.handle('streamer:set-mode', (_, enabled) => {
   if (!mainWin) return false;
   mainWin.setContentProtection(enabled);
   return true;
-});
-
-// Fetch URL from main process (bypasses renderer CSP)
-ipcMain.handle('fetch-url', async (_, url) => {
-  const https = require('node:https');
-  const http = require('node:http');
-  const mod = url.startsWith('https') ? https : http;
-  return new Promise((resolve, reject) => {
-    mod.get(url, (res) => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        // Follow redirect
-        mod.get(res.headers.location, (r2) => {
-          let data = '';
-          r2.on('data', c => data += c);
-          r2.on('end', () => resolve(data));
-        }).on('error', reject);
-        return;
-      }
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => resolve(data));
-    }).on('error', reject);
-  });
 });

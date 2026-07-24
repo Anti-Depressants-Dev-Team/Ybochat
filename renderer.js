@@ -2,7 +2,6 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 const apps = [
   { id: 'discord',       name: 'Discord',           url: 'https://discord.com/app',           initial: 'D'  },
-  { id: 'vencord',       name: 'Vencord',           url: 'https://discord.com/app',           initial: 'V',  inject: 'https://cdn.jsdelivr.net/gh/Vencord/builds@main/vencordWeb.js' },
   { id: 'cinny',         name: 'Cinny',             url: 'https://app.cinny.in/',              initial: 'C'  },
   { id: 'stoat',         name: 'Stoat',             url: 'https://stoat.chat/app',             initial: 'S'  },
   { id: 'fluxer',        name: 'Fluxer',            url: 'https://web.fluxer.app',             initial: 'F'  },
@@ -119,11 +118,6 @@ function renderApps() {
     wv.className = 'view app-view';
     wv.src = cfg.url;
     wv.setAttribute('useragent', UA);
-    if (cfg.inject) {
-      wv.setAttribute('partition', 'persist:vencord');
-      wv.setAttribute('nodeintegration', '');
-      wv.setAttribute('preload', 'vencord-preload.js');
-    }
     mainContent.appendChild(wv);
   });
 
