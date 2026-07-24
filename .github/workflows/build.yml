@@ -22,10 +22,10 @@ jobs:
       - run: npx electron-builder --win --publish=never
         env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
       - uses: actions/upload-artifact@v4
-        with: { name: ybochat-windows, path: dist/*.exe }
+        with: { name: ybochat-windows-setup, path: dist/*Setup*.exe }
       - if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
-        with: { files: dist/*.exe, generate_release_notes: true }
+        with: { files: dist/*Setup*.exe, generate_release_notes: true }
 
   build-linux:
     runs-on: ubuntu-latest
@@ -33,6 +33,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libfuse2 rpm
       - run: npm ci
       - run: node scripts/make-icon.js
       - run: npx electron-builder --linux --publish=never
