@@ -32,21 +32,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm }
-      - name: Install system deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            rpm dpkg-dev fakeroot \
-            libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 \
-            xdg-utils libatspi2.0-0 libsecret-1-0
-          sudo apt-get install -y --no-install-recommends libfuse2t64 2>/dev/null || sudo apt-get install -y --no-install-recommends libfuse2 2>/dev/null || true
-      - run: npm ci || npm install
+        with: { node-version: 22 }
+      - run: npm install
       - run: node scripts/make-icon.js
-      - run: npx electron-builder --linux deb rpm AppImage --publish=never
-        env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-          USE_SYSTEM_APPIMAGE: 'true'
+      - run: npx electron-builder --linux --x64 --publish=never
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+      - run: ls -la dist/
       - uses: actions/upload-artifact@v4
         with:
           name: ybochat-linux
