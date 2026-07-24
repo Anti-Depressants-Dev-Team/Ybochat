@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
   build:
@@ -25,19 +24,21 @@ jobs:
 
       - run: node scripts/make-icon.js
 
-      - name: Build installer
-        run: npx electron-builder --win --publish=never
+      - run: npx electron-builder --win --dir
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Package as zip
+        run: powershell Compress-Archive -Path dist\win-unpacked\* -DestinationPath dist\Ybochat.zip
+
       - uses: actions/upload-artifact@v4
         with:
-          name: ybochat-installer
-          path: dist/*.exe
+          name: ybochat
+          path: dist/Ybochat.zip
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.exe
+          files: dist/Ybochat.zip
           generate_release_notes: true

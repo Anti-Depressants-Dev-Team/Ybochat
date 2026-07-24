@@ -1,5 +1,8 @@
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
 const apps = [
   { id: 'discord',       name: 'Discord',           url: 'https://discord.com/app',           initial: 'D'  },
+  { id: 'vencord',       name: 'Vencord',           url: 'https://discord.com/app',           initial: 'V',  inject: 'https://cdn.jsdelivr.net/gh/Vencord/builds@main/Vencord.user.js' },
   { id: 'cinny',         name: 'Cinny',             url: 'https://app.cinny.in/',              initial: 'C'  },
   { id: 'stoat',         name: 'Stoat',             url: 'https://stoat.chat/app',             initial: 'S'  },
   { id: 'fluxer',        name: 'Fluxer',            url: 'https://web.fluxer.app',             initial: 'F'  },
@@ -112,8 +115,25 @@ function renderApps() {
     (horizontalTabs ? document.getElementById('horizontal-tabs-container') : sidebar).appendChild(tab);
 
     const wv = document.createElement('webview');
-    wv.id = `wv-${id}`; wv.className = 'view app-view'; wv.src = cfg.url;
+    wv.id = `wv-${id}`;
+    wv.className = 'view app-view';
+    wv.src = cfg.url;
+    wv.setAttribute('useragent', UA);
     mainContent.appendChild(wv);
+
+    // Inject userscript for modded apps (e.g. Vencord)
+    if (cfg.inject) {
+      wv.addEventListener('dom-ready', () => {
+        wv.executeJavaScript(`
+          (function(){
+            var e=document.createElement('script');
+            e.src='${cfg.inject}';
+            e.async=true;
+            document.head.appendChild(e);
+          })();
+        `);
+      });
+    }
   });
 
   apps.forEach(a => { const cb = document.querySelector(`.app-toggle[data-app="${a.id}"]`); if (cb) cb.checked = enabledApps.includes(a.id); });
