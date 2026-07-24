@@ -36,13 +36,17 @@ jobs:
       - name: Install system deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends rpm dpkg-dev fakeroot
-          # libfuse for AppImage (name varies by Ubuntu version)
+          sudo apt-get install -y --no-install-recommends \
+            rpm dpkg-dev fakeroot \
+            libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 \
+            xdg-utils libatspi2.0-0 libsecret-1-0
           sudo apt-get install -y --no-install-recommends libfuse2t64 2>/dev/null || sudo apt-get install -y --no-install-recommends libfuse2 2>/dev/null || true
-      - run: npm install
+      - run: npm ci || npm install
       - run: node scripts/make-icon.js
-      - run: npx electron-builder --linux --publish=never --verbose
-        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}', DEBUG: 'electron-builder' }
+      - run: npx electron-builder --linux deb rpm AppImage --publish=never
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          USE_SYSTEM_APPIMAGE: 'true'
       - uses: actions/upload-artifact@v4
         with:
           name: ybochat-linux

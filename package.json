@@ -1,6 +1,6 @@
 {
   "name": "ybochat",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Multi-platform chat client",
   "main": "main.js",
   "scripts": {
