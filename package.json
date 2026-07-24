@@ -1,6 +1,6 @@
 {
   "name": "ybochat",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Multi-platform chat client",
   "main": "main.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "icon": "node scripts/make-icon.js"
   },
   "keywords": [],
-  "author": "Ybochat",
+  "author": "Ybochat <ybochat@github.com>",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
