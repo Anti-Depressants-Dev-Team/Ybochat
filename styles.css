@@ -66,9 +66,11 @@ webview.view.active { display: flex; }
   display: flex; align-items: center; padding-left: 15px; padding-right: 140px;
   box-sizing: border-box; background-color: var(--bg-color); z-index: 1000;
 }
-.titlebar-left { display: flex; align-items: flex-end; height: 100%; flex: 1; }
+.titlebar-left { display: flex; align-items: flex-end; height: 100%; flex: 1; min-width: 0; overflow: hidden; }
 .titlebar-right { display: flex; align-items: center; height: 100%; }
-.titlebar-text { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.6); margin-right: 15px; margin-bottom: 8px; }
+.titlebar-text { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.6); margin-right: 15px; margin-bottom: 8px; flex-shrink: 0; }
 #horizontal-tabs-container { display: flex; height: 100%; align-items: flex-end; gap: 2px; -webkit-app-region: no-drag; overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; }
+#horizontal-tabs-container::-webkit-scrollbar { height: 3px; }
+#horizontal-tabs-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
 .settings-icon { -webkit-app-region: no-drag; cursor: pointer; color: rgba(255,255,255,0.6); transition: color 0.2s; display: flex; }
 .settings-icon:hover { color: #ffffff; }
