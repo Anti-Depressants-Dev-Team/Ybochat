@@ -121,18 +121,35 @@ function renderApps() {
     wv.setAttribute('useragent', UA);
     mainContent.appendChild(wv);
 
-    // Inject userscript for modded apps (e.g. Vencord)
+    // Inject userscript for modded apps (e.g. Vencord) — fetch via IPC then execute directly to bypass CSP
     if (cfg.inject) {
-      wv.addEventListener('dom-ready', () => {
-        wv.executeJavaScript(`
-          (function(){
-            var e=document.createElement('script');
-            e.src='${cfg.inject}';
-            e.async=true;
-            document.head.appendChild(e);
-          })();
-        `);
-      });
+      (async () => {
+        try {
+          const code = await window.electronAPI.fetchUrl(cfg.inject);
+          if (!code) return;
+          // Strip userscript metadata header if present
+          const clean = code.replace(/^\/\/ ==UserScript==[\s\S]*?\/\/ ==\/UserScript==\s*/m, '');
+          // Provide minimal GM_* polyfills so the userscript works standalone
+          const polyfills = `
+            window.GM_addStyle=function(css){var s=document.createElement('style');s.textContent=css;document.head.appendChild(s);};
+            window.GM_getValue=function(k,d){return localStorage.getItem('vc_'+k)??d;};
+            window.GM_setValue=function(k,v){localStorage.setItem('vc_'+k,v);};
+            window.GM_deleteValue=function(k){localStorage.removeItem('vc_'+k);};
+            window.GM_xmlhttpRequest=function(opts){
+              var x=new XMLHttpRequest();
+              x.open(opts.method||'GET',opts.url,true);
+              if(opts.responseType)x.responseType=opts.responseType;
+              if(opts.headers)Object.entries(opts.headers).forEach(function(e){x.setRequestHeader(e[0],e[1]);});
+              x.onload=function(){opts.onload&&opts.onload(x);};
+              x.onerror=function(){opts.onerror&&opts.onerror(x);};
+              x.send(opts.data||null);
+            };
+          `;
+          wv.addEventListener('dom-ready', () => {
+            wv.executeJavaScript(polyfills + clean);
+          });
+        } catch (e) { console.error('Vencord injection failed:', e); }
+      })();
     }
   });
 

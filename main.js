@@ -46,3 +46,26 @@ ipcMain.handle('streamer:set-mode', (_, enabled) => {
   mainWin.setContentProtection(enabled);
   return true;
 });
+
+// Fetch URL from main process (bypasses renderer CSP)
+ipcMain.handle('fetch-url', async (_, url) => {
+  const https = require('node:https');
+  const http = require('node:http');
+  const mod = url.startsWith('https') ? https : http;
+  return new Promise((resolve, reject) => {
+    mod.get(url, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        // Follow redirect
+        mod.get(res.headers.location, (r2) => {
+          let data = '';
+          r2.on('data', c => data += c);
+          r2.on('end', () => resolve(data));
+        }).on('error', reject);
+        return;
+      }
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => resolve(data));
+    }).on('error', reject);
+  });
+});
