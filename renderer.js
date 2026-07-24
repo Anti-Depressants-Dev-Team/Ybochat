@@ -121,21 +121,10 @@ function renderApps() {
     wv.setAttribute('useragent', UA);
     if (cfg.inject) {
       wv.setAttribute('partition', 'persist:vencord');
+      wv.setAttribute('nodeintegration', '');
+      wv.setAttribute('preload', 'vencord-preload.js');
     }
     mainContent.appendChild(wv);
-
-    // Inject Vencord — Discord CSP is stripped for the 'persist:vencord' partition
-    if (cfg.inject) {
-      wv.addEventListener('dom-ready', () => {
-        wv.executeJavaScript(`
-          (function(){
-            var s=document.createElement('script');
-            s.src='${cfg.inject}';
-            document.head.appendChild(s);
-          })();
-        `).catch(() => {});
-      });
-    }
   });
 
   apps.forEach(a => { const cb = document.querySelector(`.app-toggle[data-app="${a.id}"]`); if (cb) cb.checked = enabledApps.includes(a.id); });
