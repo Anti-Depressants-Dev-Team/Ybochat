@@ -17,9 +17,9 @@ All-in-one chat client that loads multiple messaging apps in a clean, unified wi
 |-----|-----|
 | Discord | Steam Chat |
 | Cinny (Matrix) | Telegram K |
-| Stoat (Matrix) | Telegram A |
-| Fluxer (Matrix) | WhatsApp |
-| Element (Matrix) | Wire |
+| Element (Matrix) | Telegram A |
+| Stoat | WhatsApp |
+| Fluxer | Wire |
 | Threema | Slack |
 
 ## Features
