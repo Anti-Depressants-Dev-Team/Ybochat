@@ -2,7 +2,7 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 const apps = [
   { id: 'discord',       name: 'Discord',           url: 'https://discord.com/app',           initial: 'D'  },
-  { id: 'vencord',       name: 'Vencord',           url: 'https://discord.com/app',           initial: 'V',  inject: 'https://cdn.jsdelivr.net/gh/Vencord/builds@main/Vencord.user.js' },
+  { id: 'vencord',       name: 'Vencord',           url: 'https://discord.com/app',           initial: 'V',  inject: 'https://cdn.jsdelivr.net/gh/Vencord/builds@main/vencordWeb.js' },
   { id: 'cinny',         name: 'Cinny',             url: 'https://app.cinny.in/',              initial: 'C'  },
   { id: 'stoat',         name: 'Stoat',             url: 'https://stoat.chat/app',             initial: 'S'  },
   { id: 'fluxer',        name: 'Fluxer',            url: 'https://web.fluxer.app',             initial: 'F'  },
@@ -119,36 +119,33 @@ function renderApps() {
     wv.className = 'view app-view';
     wv.src = cfg.url;
     wv.setAttribute('useragent', UA);
+    if (cfg.inject) {
+      wv.setAttribute('nodeintegration', '');
+    }
     mainContent.appendChild(wv);
 
-    // Inject userscript for modded apps (e.g. Vencord) — fetch via IPC then execute directly to bypass CSP
+    // Inject userscript for modded apps (e.g. Vencord)
+    // Fetch via main process (bypasses CSP), inject when DOM is ready
     if (cfg.inject) {
       (async () => {
         try {
           const code = await window.electronAPI.fetchUrl(cfg.inject);
           if (!code) return;
-          // Strip userscript metadata header if present
-          const clean = code.replace(/^\/\/ ==UserScript==[\s\S]*?\/\/ ==\/UserScript==\s*/m, '');
-          // Provide minimal GM_* polyfills so the userscript works standalone
-          const polyfills = `
-            window.GM_addStyle=function(css){var s=document.createElement('style');s.textContent=css;document.head.appendChild(s);};
-            window.GM_getValue=function(k,d){return localStorage.getItem('vc_'+k)??d;};
-            window.GM_setValue=function(k,v){localStorage.setItem('vc_'+k,v);};
-            window.GM_deleteValue=function(k){localStorage.removeItem('vc_'+k);};
-            window.GM_xmlhttpRequest=function(opts){
-              var x=new XMLHttpRequest();
-              x.open(opts.method||'GET',opts.url,true);
-              if(opts.responseType)x.responseType=opts.responseType;
-              if(opts.headers)Object.entries(opts.headers).forEach(function(e){x.setRequestHeader(e[0],e[1]);});
-              x.onload=function(){opts.onload&&opts.onload(x);};
-              x.onerror=function(){opts.onerror&&opts.onerror(x);};
-              x.send(opts.data||null);
-            };
-          `;
-          wv.addEventListener('dom-ready', () => {
-            wv.executeJavaScript(polyfills + clean);
+          let injected = false;
+          wv.addEventListener('did-finish-load', () => {
+            if (!injected) {
+              injected = true;
+              wv.executeJavaScript(code).catch(e => console.error('Vencord exec:', e));
+            }
           });
-        } catch (e) { console.error('Vencord injection failed:', e); }
+          // Also try on dom-ready for faster startup
+          wv.addEventListener('dom-ready', () => {
+            if (!injected) {
+              injected = true;
+              wv.executeJavaScript(code).catch(e => console.error('Vencord exec:', e));
+            }
+          });
+        } catch (e) { console.error('Injection failed:', e); }
       })();
     }
   });
