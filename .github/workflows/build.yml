@@ -24,21 +24,22 @@ jobs:
 
       - run: node scripts/make-icon.js
 
-      - run: npx electron-builder --win --dir
+      - name: Fix winCodeSign cache
+        run: node scripts/fix-cache.js
+
+      - name: Build portable exe
+        run: npx electron-builder --win --publish=never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Package as zip
-        run: powershell Compress-Archive -Path dist\win-unpacked\* -DestinationPath dist\Ybochat.zip
-
       - uses: actions/upload-artifact@v4
         with:
-          name: ybochat
-          path: dist/Ybochat.zip
+          name: ybochat-portable
+          path: dist/*.exe
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/Ybochat.zip
+          files: dist/*.exe
           generate_release_notes: true
