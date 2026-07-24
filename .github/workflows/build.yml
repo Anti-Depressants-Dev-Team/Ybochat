@@ -36,7 +36,7 @@ jobs:
       - name: Install system deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libfuse2 rpm
+          sudo apt-get install -y --no-install-recommends libfuse2t64 rpm 2>/dev/null || sudo apt-get install -y --no-install-recommends libfuse2 rpm
       - run: npm ci
       - run: node scripts/make-icon.js
       - run: npx electron-builder --linux --publish=never

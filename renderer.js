@@ -122,6 +122,15 @@ function renderApps() {
 settingsBtn.addEventListener('click', () => toggleSettings());
 document.getElementById('close-settings')?.addEventListener('click', () => toggleSettings(false));
 
+// Auto-update notification
+window.electronAPI.onUpdateDownloaded(() => {
+  const bar = document.createElement('div');
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--accent-color);color:#fff;padding:10px 20px;text-align:center;z-index:9999;cursor:pointer;font-size:14px';
+  bar.textContent = 'Update ready — click to restart and install';
+  bar.addEventListener('click', () => window.electronAPI.installUpdate());
+  document.body.appendChild(bar);
+});
+
 async function init() {
   await loadSettings();
   await window.electronAPI.setStreamerMode(streamerMode);

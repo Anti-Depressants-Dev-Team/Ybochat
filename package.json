@@ -26,6 +26,9 @@
     "directories": {
       "output": "dist"
     },
+    "publish": {
+      "provider": "github"
+    },
     "win": {
       "target": "nsis",
       "icon": "build/icon.ico"
@@ -35,7 +38,11 @@
       "allowToChangeInstallationDirectory": true
     },
     "linux": {
-      "target": ["deb", "rpm", "AppImage"],
+      "target": [
+        "deb",
+        "rpm",
+        "AppImage"
+      ],
       "icon": "build/icons",
       "category": "Network"
     },
@@ -49,5 +56,8 @@
       "scripts/**",
       "node_modules/**"
     ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }

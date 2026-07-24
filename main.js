@@ -1,9 +1,28 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('node:path');
 const fs = require('node:fs');
 
 let mainWin = null;
 
+// ── Auto update ─────────────────────────────────────────────────────────────
+
+autoUpdater.autoDownload = false;
+
+autoUpdater.on('update-available', () => {
+  mainWin?.webContents.send('update:available');
+  autoUpdater.downloadUpdate();
+});
+
+autoUpdater.on('update-downloaded', () => {
+  mainWin?.webContents.send('update:downloaded');
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('Update error:', err.message);
+});
+
+// ── Window ─────────────────────────────────────────────────────────────────
 const createWindow = () => {
   mainWin = new BrowserWindow({
     width: 1000, height: 700, minWidth: 600, minHeight: 400,
@@ -22,6 +41,8 @@ const createWindow = () => {
 
 app.whenReady().then(() => {
   createWindow();
+  // Check for updates after a few seconds
+  setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 5000);
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
@@ -40,4 +61,12 @@ ipcMain.handle('streamer:set-mode', (_, enabled) => {
   if (!mainWin) return false;
   mainWin.setContentProtection(enabled);
   return true;
+});
+
+ipcMain.handle('update:check', () => {
+  autoUpdater.checkForUpdates();
+});
+
+ipcMain.handle('update:install', () => {
+  autoUpdater.quitAndInstall();
 });
