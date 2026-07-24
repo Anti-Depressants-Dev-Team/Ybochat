@@ -2,6 +2,7 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 const apps = [
   { id: 'discord',       name: 'Discord',           url: 'https://discord.com/app',           initial: 'D'  },
+  { id: 'vencord',       name: 'Vencord',           browser: true,                            initial: 'V'  },
   { id: 'cinny',         name: 'Cinny',             url: 'https://app.cinny.in/',              initial: 'C'  },
   { id: 'stoat',         name: 'Stoat',             url: 'https://stoat.chat/app',             initial: 'S'  },
   { id: 'fluxer',        name: 'Fluxer',            url: 'https://web.fluxer.app',             initial: 'F'  },
@@ -79,6 +80,11 @@ function renderSettings() {
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 
 async function switchTab(viewId) {
+  // Hide Vencord BrowserWindow when leaving its tab
+  if (activeTabId === 'wv-vencord' && viewId !== 'wv-vencord') {
+    window.electronAPI.vencordHide();
+  }
+
   activeTabId = viewId;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -110,15 +116,27 @@ function renderApps() {
     const icon = document.createElement('span'); icon.className = 'tab-icon'; icon.innerText = cfg.initial;
     const label = document.createElement('span'); label.className = 'tab-text'; label.innerText = cfg.name;
     tab.appendChild(icon); tab.appendChild(label);
-    tab.addEventListener('click', () => switchTab(`wv-${id}`));
+    if (cfg.browser) {
+      tab.addEventListener('click', () => { switchTab(`wv-${id}`); window.electronAPI.vencordShow(); });
+    } else {
+      tab.addEventListener('click', () => switchTab(`wv-${id}`));
+    }
     (horizontalTabs ? document.getElementById('horizontal-tabs-container') : sidebar).appendChild(tab);
 
-    const wv = document.createElement('webview');
-    wv.id = `wv-${id}`;
-    wv.className = 'view app-view';
-    wv.src = cfg.url;
-    wv.setAttribute('useragent', UA);
-    mainContent.appendChild(wv);
+    if (!cfg.browser) {
+      const wv = document.createElement('webview');
+      wv.id = `wv-${id}`;
+      wv.className = 'view app-view';
+      wv.src = cfg.url;
+      wv.setAttribute('useragent', UA);
+      mainContent.appendChild(wv);
+    } else {
+      const view = document.createElement('div');
+      view.id = `wv-${id}`;
+      view.className = 'view app-view';
+      view.style.background = '#313338';
+      mainContent.appendChild(view);
+    }
   });
 
   apps.forEach(a => { const cb = document.querySelector(`.app-toggle[data-app="${a.id}"]`); if (cb) cb.checked = enabledApps.includes(a.id); });
