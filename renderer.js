@@ -2,7 +2,6 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 const apps = [
   { id: 'discord',       name: 'Discord',           url: 'https://discord.com/app',           initial: 'D'  },
-  { id: 'vencord',       name: 'Vencord',           browser: true,                            initial: 'V'  },
   { id: 'cinny',         name: 'Cinny',             url: 'https://app.cinny.in/',              initial: 'C'  },
   { id: 'stoat',         name: 'Stoat',             url: 'https://stoat.chat/app',             initial: 'S'  },
   { id: 'fluxer',        name: 'Fluxer',            url: 'https://web.fluxer.app',             initial: 'F'  },
@@ -27,8 +26,6 @@ let streamerMode = false;
 let settingsOpen = false;
 let activeTabId = null;
 
-// ── Settings ─────────────────────────────────────────────────────────────────
-
 async function loadSettings() {
   const s = await window.electronAPI.loadSettings();
   enabledApps    = s.enabledApps    || [];
@@ -40,8 +37,6 @@ async function saveSettings() {
   await window.electronAPI.saveSettings({ enabledApps, horizontalTabs, streamerMode });
   renderApps();
 }
-
-// ── Layout ───────────────────────────────────────────────────────────────────
 
 function applyLayout() {
   const layout = document.querySelector('.app-layout');
@@ -57,8 +52,6 @@ function applyLayout() {
     tabs.forEach(t => sidebar.appendChild(t));
   }
 }
-
-// ── Settings UI ──────────────────────────────────────────────────────────────
 
 function renderSettings() {
   apps.forEach(a => {
@@ -77,14 +70,7 @@ function renderSettings() {
   if (s) { s.checked = streamerMode; s.addEventListener('change', async e => { streamerMode = e.target.checked; await window.electronAPI.setStreamerMode(streamerMode); saveSettings(); }); }
 }
 
-// ── Tabs ─────────────────────────────────────────────────────────────────────
-
 async function switchTab(viewId) {
-  // Hide Vencord BrowserWindow when leaving its tab
-  if (activeTabId === 'wv-vencord' && viewId !== 'wv-vencord') {
-    window.electronAPI.vencordHide();
-  }
-
   activeTabId = viewId;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -98,8 +84,6 @@ function toggleSettings(force) {
   settingsOpen = force !== undefined ? force : !settingsOpen;
   settingsView.classList.toggle('active', settingsOpen);
 }
-
-// ── Render ───────────────────────────────────────────────────────────────────
 
 function renderApps() {
   document.querySelectorAll('.app-tab').forEach(t => t.remove());
@@ -116,27 +100,15 @@ function renderApps() {
     const icon = document.createElement('span'); icon.className = 'tab-icon'; icon.innerText = cfg.initial;
     const label = document.createElement('span'); label.className = 'tab-text'; label.innerText = cfg.name;
     tab.appendChild(icon); tab.appendChild(label);
-    if (cfg.browser) {
-      tab.addEventListener('click', () => { switchTab(`wv-${id}`); window.electronAPI.vencordShow(); });
-    } else {
-      tab.addEventListener('click', () => switchTab(`wv-${id}`));
-    }
+    tab.addEventListener('click', () => switchTab(`wv-${id}`));
     (horizontalTabs ? document.getElementById('horizontal-tabs-container') : sidebar).appendChild(tab);
 
-    if (!cfg.browser) {
-      const wv = document.createElement('webview');
-      wv.id = `wv-${id}`;
-      wv.className = 'view app-view';
-      wv.src = cfg.url;
-      wv.setAttribute('useragent', UA);
-      mainContent.appendChild(wv);
-    } else {
-      const view = document.createElement('div');
-      view.id = `wv-${id}`;
-      view.className = 'view app-view';
-      view.style.background = '#313338';
-      mainContent.appendChild(view);
-    }
+    const wv = document.createElement('webview');
+    wv.id = `wv-${id}`;
+    wv.className = 'view app-view';
+    wv.src = cfg.url;
+    wv.setAttribute('useragent', UA);
+    mainContent.appendChild(wv);
   });
 
   apps.forEach(a => { const cb = document.querySelector(`.app-toggle[data-app="${a.id}"]`); if (cb) cb.checked = enabledApps.includes(a.id); });
@@ -146,8 +118,6 @@ function renderApps() {
   if (enabledApps.length) switchTab(`wv-${enabledApps[0]}`);
   else toggleSettings(true);
 }
-
-// ── Wire up ──────────────────────────────────────────────────────────────────
 
 settingsBtn.addEventListener('click', () => toggleSettings());
 document.getElementById('close-settings')?.addEventListener('click', () => toggleSettings(false));
