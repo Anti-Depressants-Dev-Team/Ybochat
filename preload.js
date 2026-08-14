@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   loadSettings: () => ipcRenderer.invoke('settings:load'),
   saveSettings: (s) => ipcRenderer.invoke('settings:save', s),
+  ensureVencord: () => ipcRenderer.invoke('vencord:ensure'),
   setStreamerMode: (enabled) => ipcRenderer.invoke('streamer:set-mode', enabled),
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
   installUpdate: () => ipcRenderer.invoke('update:install'),

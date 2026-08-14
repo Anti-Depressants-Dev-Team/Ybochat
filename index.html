@@ -33,8 +33,15 @@
       <label><input type="checkbox" id="toggle-streamer-mode"> Streamer mode (hide from OBS)</label>
     </div>
     <div class="settings-group">
+      <h3>System</h3>
+      <label><input type="checkbox" id="toggle-close-to-tray"> Close to system tray</label>
+      <label><input type="checkbox" id="toggle-auto-start"> Start Ybochat with Windows</label>
+    </div>
+    <div class="settings-group">
       <h3>Apps</h3>
       <label><input type="checkbox" class="app-toggle" data-app="discord"> Discord</label>
+      <label><input type="checkbox" class="app-toggle" data-app="vencord"> Vencord (Discord)</label>
+      <div id="vencord-status" class="settings-note" role="status" hidden></div>
       <label><input type="checkbox" class="app-toggle" data-app="cinny"> Cinny</label>
       <label><input type="checkbox" class="app-toggle" data-app="stoat"> Stoat</label>
       <label><input type="checkbox" class="app-toggle" data-app="fluxer"> Fluxer</label>

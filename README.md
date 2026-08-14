@@ -11,11 +11,12 @@ All-in-one chat client that loads multiple messaging apps in a clean, unified wi
 
 ## Apps
 
-12 chat services as toggleable tabs:
+13 chat services as toggleable tabs:
 
 | App | |
 |-----|-----|
 | Discord | Steam Chat |
+| Vencord (Discord) | |
 | Cinny (Matrix) | Telegram K |
 | Element (Matrix) | Telegram A |
 | Stoat | WhatsApp |
@@ -25,12 +26,17 @@ All-in-one chat client that loads multiple messaging apps in a clean, unified wi
 ## Features
 
 - **Tabbed interface** — switch between apps with a click
-- **Horizontal tab mode** — Chrome-style tabs in the titlebar, scrollable
+- **Separate Vencord instance** — downloads the official Vencord Web extension and keeps its Discord login isolated
+- **Horizontal tab mode** — Chrome-style tabs in the titlebar, scrollable with the mouse wheel
 - **Streamer mode** — hides the window from OBS and screen capture
 - **Chrome user agent** — all webviews identify as Chrome 120, avoiding compatibility blocks
 - **Scrollable sidebar** — handles any number of enabled apps
 - **Settings persistence** — your app selections and layout survive restarts
 - **Auto-updater** — checks GitHub Releases and installs updates with one click
+
+Close-to-tray and Start-with-Windows behavior are enabled by default and can be changed in Settings. Embedded passkey prompts are disabled so services use their regular login flows.
+
+Vencord is a third-party Discord modification and is not affiliated with Discord. Vencord's maintainers note that client modifications are against Discord's Terms of Service, so use it at your own discretion.
 
 ## Install
 
