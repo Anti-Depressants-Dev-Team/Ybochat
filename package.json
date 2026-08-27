@@ -1,6 +1,6 @@
 {
   "name": "ybochat",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "description": "Multi-platform chat client",
   "main": "main.js",
   "scripts": {
@@ -51,8 +51,12 @@
       "main.js",
       "preload.js",
       "renderer.js",
+      "apps.js",
+      "settings.js",
       "index.html",
+      "settings.html",
       "styles.css",
+      "settings.css",
       "chat.png",
       "scripts/**",
       "node_modules/**"

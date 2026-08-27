@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+  <title>Ybochat Settings</title>
+  <link rel="stylesheet" href="./settings.css">
+</head>
+<body>
+  <div class="titlebar">
+    <span class="titlebar-text">Settings</span>
+  </div>
+  <div class="settings-body">
+    <div class="settings-group">
+      <h3>Layout</h3>
+      <label class="switch-row"><input type="checkbox" id="toggle-horizontal-tabs"> Use horizontal tabs</label>
+      <label class="switch-row"><input type="checkbox" id="toggle-streamer-mode"> Streamer mode (hide from OBS)</label>
+    </div>
+    <div class="settings-group">
+      <h3>System</h3>
+      <label class="switch-row"><input type="checkbox" id="toggle-close-to-tray"> Close to system tray</label>
+      <label class="switch-row"><input type="checkbox" id="toggle-auto-start"> Start Ybochat with Windows</label>
+    </div>
+    <div class="settings-group">
+      <h3>Apps</h3>
+      <p class="settings-hint">Use <span class="inline-plus">+</span> to add another account. Each one gets its own container, so logins stay separate.</p>
+      <div id="apps-list"></div>
+    </div>
+  </div>
+  <script src="./apps.js"></script>
+  <script src="./settings.js"></script>
+</body>
+</html>

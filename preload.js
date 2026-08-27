@@ -2,10 +2,12 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   loadSettings: () => ipcRenderer.invoke('settings:load'),
   saveSettings: (s) => ipcRenderer.invoke('settings:save', s),
-  ensureVencord: () => ipcRenderer.invoke('vencord:ensure'),
+  openSettings: () => ipcRenderer.invoke('settings:open'),
+  ensureVencord: (partition) => ipcRenderer.invoke('vencord:ensure', partition),
   setStreamerMode: (enabled) => ipcRenderer.invoke('streamer:set-mode', enabled),
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
+  onSettingsChanged: (cb) => { const h = (_, s) => cb(s); ipcRenderer.on('settings:changed', h); return () => ipcRenderer.removeListener('settings:changed', h); },
   onUpdateAvailable: (cb) => { const h = () => cb(); ipcRenderer.on('update:available', h); return () => ipcRenderer.removeListener('update:available', h); },
   onUpdateDownloaded: (cb) => { const h = () => cb(); ipcRenderer.on('update:downloaded', h); return () => ipcRenderer.removeListener('update:downloaded', h); },
 });

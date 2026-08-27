@@ -5,11 +5,12 @@ const fs = require('node:fs');
 const { ensureVencordExtension } = require('./scripts/vencord-extension');
 
 let mainWin = null;
+let settingsWin = null;
 let tray = null;
 let isQuitting = false;
 
 const defaultSettings = {
-  enabledApps: [],
+  accounts: [],
   horizontalTabs: false,
   streamerMode: false,
   closeToTray: true,
@@ -17,12 +18,26 @@ const defaultSettings = {
 };
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 
+// Settings written before multi-account support only listed enabled app ids.
+// Each becomes a single account keeping its original session, so upgrading
+// never signs anybody out.
+function migrateAccounts(saved) {
+  if (Array.isArray(saved.accounts)) return saved.accounts;
+  if (!Array.isArray(saved.enabledApps)) return [];
+  return saved.enabledApps.map(id => ({
+    uid: id,
+    app: id,
+    name: null,
+    partition: id === 'vencord' ? 'persist:vencord' : null
+  }));
+}
+
 function loadSettings() {
   try {
     const saved = fs.existsSync(settingsPath)
       ? JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
       : {};
-    return { ...defaultSettings, ...saved };
+    return { ...defaultSettings, ...saved, accounts: migrateAccounts(saved) };
   } catch (e) {
     return { ...defaultSettings };
   }
@@ -95,7 +110,7 @@ autoUpdater.on('error', (err) => {
   console.error('Update error:', err.message);
 });
 
-// ── Window ─────────────────────────────────────────────────────────────────
+// ── Windows ────────────────────────────────────────────────────────────────
 const createWindow = () => {
   mainWin = new BrowserWindow({
     width: 1000, height: 700, minWidth: 600, minHeight: 400,
@@ -118,6 +133,39 @@ const createWindow = () => {
   mainWin.on('closed', () => { mainWin = null; });
 };
 
+function createSettingsWindow() {
+  if (settingsWin && !settingsWin.isDestroyed()) {
+    if (settingsWin.isMinimized()) settingsWin.restore();
+    settingsWin.show();
+    settingsWin.focus();
+    return;
+  }
+
+  settingsWin = new BrowserWindow({
+    width: 460, height: 720, minWidth: 380, minHeight: 360,
+    title: 'Ybochat Settings',
+    icon: path.join(__dirname, 'chat.png'),
+    parent: mainWin ?? undefined,
+    show: false,
+    autoHideMenuBar: true,
+    backgroundColor: '#161616',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#161616', symbolColor: '#ffffff', height: 32 },
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true
+    }
+  });
+  settingsWin.loadFile('settings.html');
+  settingsWin.once('ready-to-show', () => {
+    settingsWin.setContentProtection(settings.streamerMode);
+    settingsWin.show();
+  });
+  settingsWin.on('closed', () => { settingsWin = null; });
+}
+
+const liveWindows = () => [mainWin, settingsWin].filter(win => win && !win.isDestroyed());
+
 app.whenReady().then(() => {
   createWindow();
   syncTray();
@@ -133,21 +181,30 @@ app.on('window-all-closed', () => {
 });
 
 ipcMain.handle('settings:load', () => ({ ...settings }));
-ipcMain.handle('settings:save', (_, s) => {
+ipcMain.handle('settings:save', (event, s) => {
   try {
     settings = { ...defaultSettings, ...s };
     fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
     syncTray();
     syncAutoStart();
+    // Keep the other window in step with whichever one made the change.
+    for (const win of liveWindows()) {
+      if (win.webContents.id !== event.sender.id) win.webContents.send('settings:changed', { ...settings });
+    }
     return true;
   }
   catch (e) { return false; }
 });
 
-ipcMain.handle('vencord:ensure', async () => {
+ipcMain.handle('settings:open', () => {
+  createSettingsWindow();
+  return true;
+});
+
+ipcMain.handle('vencord:ensure', async (_, partition) => {
   try {
-    await ensureVencordExtension();
+    await ensureVencordExtension(partition);
     return { ok: true };
   } catch (error) {
     console.error('Could not load Vencord Web:', error);
@@ -156,8 +213,9 @@ ipcMain.handle('vencord:ensure', async () => {
 });
 
 ipcMain.handle('streamer:set-mode', (_, enabled) => {
-  if (!mainWin) return false;
-  mainWin.setContentProtection(enabled);
+  const windows = liveWindows();
+  if (!windows.length) return false;
+  for (const win of windows) win.setContentProtection(enabled);
   return true;
 });
 

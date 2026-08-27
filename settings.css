@@ -1,0 +1,79 @@
+:root { --bg-color: #161616; --text-color: #ffffff; --accent-color: #007bff; --muted: rgba(255,255,255,0.55); }
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color); color: var(--text-color);
+  margin: 0; height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+.titlebar {
+  -webkit-app-region: drag; height: 32px; flex-shrink: 0;
+  display: flex; align-items: center; padding: 0 140px 0 15px;
+  background-color: var(--bg-color);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.titlebar-text { font-size: 12px; font-weight: 500; color: var(--muted); }
+
+.settings-body { flex: 1; overflow-y: auto; padding: 20px 22px 28px; }
+.settings-body::-webkit-scrollbar { width: 10px; }
+.settings-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 5px; border: 3px solid var(--bg-color); }
+
+.settings-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
+.settings-group:last-child { margin-bottom: 0; }
+.settings-group h3 {
+  margin: 0; font-size: 11px; letter-spacing: 0.08em; color: var(--accent-color);
+  text-transform: uppercase; font-weight: 700;
+}
+.settings-hint { margin: -2px 0 2px; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.inline-plus {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 15px; height: 15px; border-radius: 4px; font-size: 12px; line-height: 1;
+  background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); vertical-align: -2px;
+}
+
+.switch-row { font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+input[type="checkbox"] { accent-color: var(--accent-color); width: 15px; height: 15px; margin: 0; cursor: pointer; }
+
+/* ── App rows ─────────────────────────────────────────────────────────── */
+
+#apps-list { display: flex; flex-direction: column; gap: 2px; }
+
+.app-block { border-radius: 8px; }
+.app-block.expanded { background: rgba(255,255,255,0.035); padding-bottom: 6px; }
+
+.app-row { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 8px; }
+.app-row:hover { background: rgba(255,255,255,0.05); }
+.app-block.expanded .app-row:hover { background: transparent; }
+
+.app-main { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; cursor: pointer; font-size: 14px; }
+.app-icon { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; color: rgba(255,255,255,0.55); flex-shrink: 0; }
+.app-main input:checked ~ .app-icon { color: var(--text-color); }
+.app-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-count { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+
+.icon-button {
+  flex-shrink: 0; width: 24px; height: 24px; border: none; border-radius: 6px;
+  background: transparent; color: var(--muted); font-size: 17px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background-color 0.15s, color 0.15s;
+}
+.icon-button:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: #fff; }
+.icon-button:disabled { opacity: 0.4; cursor: default; }
+.remove-account:hover:not(:disabled) { background: rgba(255,90,90,0.18); color: #ff8b8b; }
+
+.account-list { display: flex; flex-direction: column; gap: 4px; padding: 2px 6px 0 22px; }
+.account-row { display: flex; align-items: center; gap: 6px; }
+.account-branch { color: rgba(255,255,255,0.25); font-size: 12px; flex-shrink: 0; width: 12px; }
+.account-name {
+  flex: 1; min-width: 0; font: inherit; font-size: 13px;
+  background: rgba(255,255,255,0.06); color: var(--text-color);
+  border: 1px solid transparent; border-radius: 6px; padding: 4px 8px;
+}
+.account-name:hover { border-color: rgba(255,255,255,0.12); }
+.account-name:focus { outline: none; border-color: var(--accent-color); background: rgba(255,255,255,0.09); }
+
+.app-note { font-size: 12px; line-height: 1.4; color: var(--muted); padding: 0 6px 4px 36px; }
+.app-note.error { color: #ff7b7b; }

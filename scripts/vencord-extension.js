@@ -16,7 +16,7 @@ const UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024;
 const MAX_EXTRACTED_BYTES = 100 * 1024 * 1024;
 
-let extensionPromise = null;
+const extensionPromises = new Map();
 
 function crxToZip(crx) {
   if (crx.subarray(0, 4).toString('ascii') !== 'Cr24') {
@@ -178,8 +178,8 @@ async function resolveExtensionDirectory() {
   }
 }
 
-async function loadVencordExtension() {
-  const vencordSession = session.fromPartition(VENCORD_PARTITION);
+async function loadVencordExtension(partition) {
+  const vencordSession = session.fromPartition(partition);
   const existing = vencordSession.extensions.getAllExtensions()
     .find(extension => extension.name === 'Vencord Web');
   if (existing) return existing;
@@ -188,14 +188,18 @@ async function loadVencordExtension() {
   return vencordSession.extensions.loadExtension(extensionDir);
 }
 
-function ensureVencordExtension() {
-  if (!extensionPromise) {
-    extensionPromise = loadVencordExtension().catch(error => {
-      extensionPromise = null;
+// Every extra Vencord account lives in its own container, so the extension has
+// to be loaded once per partition.
+function ensureVencordExtension(partition = VENCORD_PARTITION) {
+  let pending = extensionPromises.get(partition);
+  if (!pending) {
+    pending = loadVencordExtension(partition).catch(error => {
+      extensionPromises.delete(partition);
       throw error;
     });
+    extensionPromises.set(partition, pending);
   }
-  return extensionPromise;
+  return pending;
 }
 
 module.exports = {
