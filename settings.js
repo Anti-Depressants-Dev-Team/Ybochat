@@ -5,15 +5,18 @@ const toggles = {
   horizontalTabs: document.getElementById('toggle-horizontal-tabs'),
   streamerMode: document.getElementById('toggle-streamer-mode'),
   closeToTray: document.getElementById('toggle-close-to-tray'),
-  autoStart: document.getElementById('toggle-auto-start')
+  autoStart: document.getElementById('toggle-auto-start'),
+  startMinimized: document.getElementById('toggle-start-minimized')
 };
+const startMinimizedNote = document.getElementById('start-minimized-note');
 
 let settings = {
   accounts: [],
   horizontalTabs: false,
   streamerMode: false,
   closeToTray: true,
-  autoStart: true
+  autoStart: true,
+  startMinimized: false
 };
 
 // Per-app status line, e.g. the Vencord extension download.
@@ -26,7 +29,8 @@ function adopt(incoming) {
     horizontalTabs: !!incoming.horizontalTabs,
     streamerMode: !!incoming.streamerMode,
     closeToTray: incoming.closeToTray !== false,
-    autoStart: incoming.autoStart !== false
+    autoStart: incoming.autoStart !== false,
+    startMinimized: !!incoming.startMinimized
   };
 }
 
@@ -207,6 +211,7 @@ function renderApps() {
 
 function renderToggles() {
   for (const [key, input] of Object.entries(toggles)) input.checked = settings[key];
+  startMinimizedNote.hidden = !settings.startMinimized;
 }
 
 toggles.horizontalTabs.addEventListener('change', e => {
@@ -224,6 +229,11 @@ toggles.closeToTray.addEventListener('change', e => {
 });
 toggles.autoStart.addEventListener('change', e => {
   settings.autoStart = e.target.checked;
+  save();
+});
+toggles.startMinimized.addEventListener('change', e => {
+  settings.startMinimized = e.target.checked;
+  startMinimizedNote.hidden = !settings.startMinimized;
   save();
 });
 

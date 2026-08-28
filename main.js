@@ -14,7 +14,8 @@ const defaultSettings = {
   horizontalTabs: false,
   streamerMode: false,
   closeToTray: true,
-  autoStart: true
+  autoStart: true,
+  startMinimized: false
 };
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 
@@ -59,7 +60,8 @@ function showMainWindow() {
 }
 
 function syncTray() {
-  if (!settings.closeToTray) {
+  // Starting hidden needs a tray icon too, or there is no way back to the app.
+  if (!settings.closeToTray && !settings.startMinimized) {
     tray?.destroy();
     tray = null;
     return;
@@ -72,6 +74,7 @@ function syncTray() {
   tray.setToolTip('Ybochat');
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Show Ybochat', click: showMainWindow },
+    { label: 'Settings', click: createSettingsWindow },
     { type: 'separator' },
     {
       label: 'Quit',
@@ -111,10 +114,11 @@ autoUpdater.on('error', (err) => {
 });
 
 // ── Windows ────────────────────────────────────────────────────────────────
-const createWindow = () => {
+const createWindow = ({ startHidden = false } = {}) => {
   mainWin = new BrowserWindow({
     width: 1000, height: 700, minWidth: 600, minHeight: 400,
     icon: path.join(__dirname, 'chat.png'),
+    show: !startHidden,
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: '#121212', symbolColor: '#ffffff', height: 32 },
     webPreferences: {
@@ -145,7 +149,9 @@ function createSettingsWindow() {
     width: 460, height: 720, minWidth: 380, minHeight: 360,
     title: 'Ybochat Settings',
     icon: path.join(__dirname, 'chat.png'),
-    parent: mainWin ?? undefined,
+    // Parenting to a hidden window would hide the settings window with it, so
+    // only attach when there is something to float above.
+    parent: mainWin?.isVisible() ? mainWin : undefined,
     show: false,
     autoHideMenuBar: true,
     backgroundColor: '#161616',
@@ -167,7 +173,7 @@ function createSettingsWindow() {
 const liveWindows = () => [mainWin, settingsWin].filter(win => win && !win.isDestroyed());
 
 app.whenReady().then(() => {
-  createWindow();
+  createWindow({ startHidden: settings.startMinimized });
   syncTray();
   syncAutoStart();
   // Check for updates after a few seconds

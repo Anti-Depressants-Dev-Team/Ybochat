@@ -28,6 +28,8 @@ body {
   text-transform: uppercase; font-weight: 700;
 }
 .settings-hint { margin: -2px 0 2px; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.settings-hint.sub { margin: -6px 0 0; padding-left: 25px; }
+.settings-hint[hidden] { display: none; }
 .inline-plus {
   display: inline-flex; align-items: center; justify-content: center;
   width: 15px; height: 15px; border-radius: 4px; font-size: 12px; line-height: 1;

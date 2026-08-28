@@ -162,6 +162,8 @@ async function init() {
   await window.electronAPI.setStreamerMode(!!saved.streamerMode);
   applyLayout();
   renderAccounts();
-  if (!accounts.length) openSettings();
+  // Nothing to show yet — but not while starting hidden, or the settings
+  // window would pop up on a launch the user meant to be silent.
+  if (!accounts.length && !saved.startMinimized) openSettings();
 }
 init();
