@@ -66,6 +66,10 @@ function createWebview(account) {
   wv.className = 'view app-view';
   if (account.partition) wv.setAttribute('partition', account.partition);
   wv.setAttribute('useragent', UA);
+  // Without this a webview drops popups before anything can see them, which is
+  // why links did nothing. The main process denies every one and hands the URL
+  // to the default browser instead, so no popup window is ever created.
+  wv.setAttribute('allowpopups', '');
   wv.src = appById(account.app).url;
   mainContent.appendChild(wv);
   return wv;

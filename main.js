@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu, nativeImage, Tray } = require('electron');
+const { app, BrowserWindow, desktopCapturer, ipcMain, Menu, nativeImage, session, shell, Tray } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -6,8 +6,13 @@ const { ensureVencordExtension } = require('./scripts/vencord-extension');
 
 let mainWin = null;
 let settingsWin = null;
+let shareWin = null;
 let tray = null;
 let isQuitting = false;
+
+// The picker request currently waiting on the user, and the sources it listed.
+let pendingShare = null;
+let shareSources = [];
 
 const defaultSettings = {
   accounts: [],
@@ -113,6 +118,49 @@ autoUpdater.on('error', (err) => {
   console.error('Update error:', err.message);
 });
 
+// ── Links and screen sharing ───────────────────────────────────────────────
+
+// Anything outside these is never handed to the OS: a page could otherwise use
+// a registered protocol to launch another application behind a harmless link.
+const EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
+
+function openExternal(rawUrl) {
+  let target;
+  try { target = new URL(rawUrl); } catch { return; }
+  if (!EXTERNAL_PROTOCOLS.has(target.protocol)) return;
+  shell.openExternal(target.href);
+}
+
+const shareReadySessions = new WeakSet();
+
+// Chat apps ask for a screen through getDisplayMedia, which Electron leaves
+// unanswered unless a handler picks the source for them.
+function enableScreenSharing(sess) {
+  if (shareReadySessions.has(sess)) return;
+  shareReadySessions.add(sess);
+
+  sess.setDisplayMediaRequestHandler(async (_, callback) => {
+    const choice = await pickShareSource();
+    // An empty response is how a declined request is reported to the page.
+    if (!choice) return callback({});
+    callback({
+      video: { id: choice.id, name: choice.name },
+      ...(choice.audio ? { audio: 'loopback' } : {})
+    });
+  });
+}
+
+app.on('web-contents-created', (_, contents) => {
+  // Links in chat apps open with target=_blank. With no handler Electron just
+  // swallows them, which is why clicking a link appeared to do nothing.
+  contents.setWindowOpenHandler(({ url }) => {
+    openExternal(url);
+    return { action: 'deny' };
+  });
+
+  if (contents.getType() === 'webview') enableScreenSharing(contents.session);
+});
+
 // ── Windows ────────────────────────────────────────────────────────────────
 const createWindow = ({ startHidden = false } = {}) => {
   mainWin = new BrowserWindow({
@@ -170,7 +218,54 @@ function createSettingsWindow() {
   settingsWin.on('closed', () => { settingsWin = null; });
 }
 
-const liveWindows = () => [mainWin, settingsWin].filter(win => win && !win.isDestroyed());
+function createSharePicker() {
+  shareWin = new BrowserWindow({
+    width: 780, height: 620, minWidth: 520, minHeight: 420,
+    title: 'Share your screen',
+    icon: path.join(__dirname, 'chat.png'),
+    parent: mainWin?.isVisible() ? mainWin : undefined,
+    show: false,
+    autoHideMenuBar: true,
+    alwaysOnTop: true,
+    backgroundColor: '#161616',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#161616', symbolColor: '#ffffff', height: 32 },
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true
+    }
+  });
+  shareWin.loadFile('share-picker.html');
+  shareWin.once('ready-to-show', () => {
+    shareWin.setContentProtection(settings.streamerMode);
+    shareWin.show();
+    shareWin.focus();
+  });
+  shareWin.on('closed', () => {
+    shareWin = null;
+    // Closing the window without picking counts as declining the request.
+    resolveShare(null);
+  });
+}
+
+function resolveShare(choice) {
+  const resolve = pendingShare;
+  pendingShare = null;
+  shareSources = [];
+  resolve?.(choice);
+  if (shareWin && !shareWin.isDestroyed()) shareWin.close();
+}
+
+function pickShareSource() {
+  // One prompt at a time; anything asking while it is open is declined.
+  if (pendingShare) return Promise.resolve(null);
+  return new Promise(resolve => {
+    pendingShare = resolve;
+    createSharePicker();
+  });
+}
+
+const liveWindows = () => [mainWin, settingsWin, shareWin].filter(win => win && !win.isDestroyed());
 
 app.whenReady().then(() => {
   createWindow({ startHidden: settings.startMinimized });
@@ -207,6 +302,42 @@ ipcMain.handle('settings:open', () => {
   createSettingsWindow();
   return true;
 });
+
+ipcMain.handle('screenshare:sources', async () => {
+  // The picker is on screen by now, so keep it out of its own window list.
+  const pickerId = shareWin && !shareWin.isDestroyed() ? shareWin.getMediaSourceId() : null;
+
+  const sources = await desktopCapturer.getSources({
+    types: ['screen', 'window'],
+    thumbnailSize: { width: 320, height: 180 },
+    fetchWindowIcons: true
+  });
+
+  shareSources = sources
+    .filter(source => source.name && source.id !== pickerId)
+    .map(source => ({
+      id: source.id,
+      name: source.name,
+      kind: source.id.startsWith('screen:') ? 'screen' : 'window',
+      thumbnail: source.thumbnail.isEmpty() ? null : source.thumbnail.toDataURL(),
+      icon: source.appIcon?.isEmpty() === false ? source.appIcon.toDataURL() : null
+    }));
+  return shareSources;
+});
+
+ipcMain.handle('screenshare:choose', (_, id, audio) => {
+  const source = shareSources.find(s => s.id === id);
+  if (!source) return false;
+  resolveShare({ id: source.id, name: source.name, audio: !!audio });
+  return true;
+});
+
+ipcMain.handle('screenshare:cancel', () => {
+  resolveShare(null);
+  return true;
+});
+
+ipcMain.handle('screenshare:loopback-supported', () => process.platform === 'win32');
 
 ipcMain.handle('vencord:ensure', async (_, partition) => {
   try {

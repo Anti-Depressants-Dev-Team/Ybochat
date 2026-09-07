@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; img-src 'self' data:">
+  <title>Share your screen</title>
+  <link rel="stylesheet" href="./share-picker.css">
+</head>
+<body>
+  <div class="titlebar">
+    <span class="titlebar-text">Choose what to share</span>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab-button active" data-kind="screen" role="tab">Entire screen</button>
+    <button type="button" class="tab-button" data-kind="window" role="tab">Application window</button>
+  </div>
+
+  <div class="source-area">
+    <p class="state" id="state">Looking for things to share...</p>
+    <div class="source-grid" id="source-grid" role="listbox" aria-label="Sources you can share"></div>
+  </div>
+
+  <div class="footer">
+    <label class="audio-row" id="audio-row" hidden>
+      <input type="checkbox" id="share-audio"> Share system audio
+    </label>
+    <div class="footer-buttons">
+      <button type="button" id="cancel-share" class="button">Cancel</button>
+      <button type="button" id="confirm-share" class="button primary" disabled>Share</button>
+    </div>
+  </div>
+
+  <script src="./share-picker.js"></script>
+</body>
+</html>
