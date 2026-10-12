@@ -3,6 +3,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadSettings: () => ipcRenderer.invoke('settings:load'),
   saveSettings: (s) => ipcRenderer.invoke('settings:save', s),
   openSettings: () => ipcRenderer.invoke('settings:open'),
+  showTabMenu: (info) => ipcRenderer.send('tab:menu', info),
+  onTabMenuAction: (cb) => { const h = (_, a) => cb(a); ipcRenderer.on('tab:menu-action', h); return () => ipcRenderer.removeListener('tab:menu-action', h); },
   ensureVencord: (partition) => ipcRenderer.invoke('vencord:ensure', partition),
   getShareSources: () => ipcRenderer.invoke('screenshare:sources'),
   chooseShareSource: (id, audio) => ipcRenderer.invoke('screenshare:choose', id, audio),

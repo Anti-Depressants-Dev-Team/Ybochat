@@ -1,8 +1,10 @@
-const { app, BrowserWindow, desktopCapturer, ipcMain, Menu, nativeImage, session, shell, Tray } = require('electron');
+const { app, BrowserWindow, desktopCapturer, ipcMain, Menu, nativeImage, nativeTheme, session, shell, Tray } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('node:path');
 const fs = require('node:fs');
+const zlib = require('node:zlib');
 const { ensureVencordExtension } = require('./scripts/vencord-extension');
+const themes = require('./themes.js');
 
 let mainWin = null;
 let settingsWin = null;
@@ -20,7 +22,8 @@ const defaultSettings = {
   streamerMode: false,
   closeToTray: true,
   autoStart: true,
-  startMinimized: false
+  startMinimized: false,
+  ...themes.DEFAULTS
 };
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 
@@ -162,13 +165,37 @@ app.on('web-contents-created', (_, contents) => {
 });
 
 // ── Windows ────────────────────────────────────────────────────────────────
+
+// The native minimize/maximize/close buttons are drawn by the OS, so their
+// background has to be told about the theme. The main window uses the page
+// background; the settings and share windows sit on the slightly raised panel.
+function windowColors(surface) {
+  const theme = themes.THEMES[themes.normalizeAppearance(settings).theme];
+  const color = surface === 'main' ? theme.bg : theme.panel;
+  return { background: color, overlay: { color, symbolColor: theme.fg, height: 32 } };
+}
+
+function syncWindowColors() {
+  const theme = themes.THEMES[themes.normalizeAppearance(settings).theme];
+  // Native context menus and scrollbars follow this.
+  nativeTheme.themeSource = theme.scheme;
+  for (const [win, surface] of [[mainWin, 'main'], [settingsWin, 'panel'], [shareWin, 'panel']]) {
+    if (!win || win.isDestroyed()) continue;
+    const { background, overlay } = windowColors(surface);
+    win.setBackgroundColor(background);
+    try { win.setTitleBarOverlay(overlay); } catch { /* not every platform draws an overlay */ }
+  }
+}
+
 const createWindow = ({ startHidden = false } = {}) => {
+  const colors = windowColors('main');
   mainWin = new BrowserWindow({
     width: 1000, height: 700, minWidth: 600, minHeight: 400,
     icon: path.join(__dirname, 'chat.png'),
     show: !startHidden,
+    backgroundColor: colors.background,
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#121212', symbolColor: '#ffffff', height: 32 },
+    titleBarOverlay: colors.overlay,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       webviewTag: true,
@@ -193,6 +220,7 @@ function createSettingsWindow() {
     return;
   }
 
+  const colors = windowColors('panel');
   settingsWin = new BrowserWindow({
     width: 460, height: 720, minWidth: 380, minHeight: 360,
     title: 'Ybochat Settings',
@@ -202,9 +230,9 @@ function createSettingsWindow() {
     parent: mainWin?.isVisible() ? mainWin : undefined,
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: '#161616',
+    backgroundColor: colors.background,
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#161616', symbolColor: '#ffffff', height: 32 },
+    titleBarOverlay: colors.overlay,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true
@@ -219,6 +247,7 @@ function createSettingsWindow() {
 }
 
 function createSharePicker() {
+  const colors = windowColors('panel');
   shareWin = new BrowserWindow({
     width: 780, height: 620, minWidth: 520, minHeight: 420,
     title: 'Share your screen',
@@ -227,9 +256,9 @@ function createSharePicker() {
     show: false,
     autoHideMenuBar: true,
     alwaysOnTop: true,
-    backgroundColor: '#161616',
+    backgroundColor: colors.background,
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#161616', symbolColor: '#ffffff', height: 32 },
+    titleBarOverlay: colors.overlay,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true
@@ -269,6 +298,7 @@ const liveWindows = () => [mainWin, settingsWin, shareWin].filter(win => win && 
 
 app.whenReady().then(() => {
   createWindow({ startHidden: settings.startMinimized });
+  syncWindowColors();
   syncTray();
   syncAutoStart();
   // Check for updates after a few seconds
@@ -284,11 +314,14 @@ app.on('window-all-closed', () => {
 ipcMain.handle('settings:load', () => ({ ...settings }));
 ipcMain.handle('settings:save', (event, s) => {
   try {
-    settings = { ...defaultSettings, ...s };
+    // Merge rather than replace: the main window only sends what it changed
+    // (e.g. tab order), and that must not reset everything else to defaults.
+    settings = { ...defaultSettings, ...settings, ...s };
     fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
     syncTray();
     syncAutoStart();
+    syncWindowColors();
     // Keep the other window in step with whichever one made the change.
     for (const win of liveWindows()) {
       if (win.webContents.id !== event.sender.id) win.webContents.send('settings:changed', { ...settings });
@@ -301,6 +334,92 @@ ipcMain.handle('settings:save', (event, s) => {
 ipcMain.handle('settings:open', () => {
   createSettingsWindow();
   return true;
+});
+
+// ── Tab context menu ───────────────────────────────────────────────────────
+
+// A tiny solid-color circle as a PNG, so each tag color can show its swatch in
+// the native menu. Built by hand to avoid relying on platform pixel order.
+const swatchCache = new Map();
+function colorSwatch(hex) {
+  if (swatchCache.has(hex)) return swatchCache.get(hex);
+  const size = 16;
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const rows = Buffer.alloc(size * (1 + size * 4));
+  for (let y = 0; y < size; y++) {
+    const row = y * (1 + size * 4);
+    for (let x = 0; x < size; x++) {
+      // Soft edge: alpha falls off over the last pixel of the radius.
+      const d = Math.hypot(x + 0.5 - size / 2, y + 0.5 - size / 2);
+      const alpha = Math.max(0, Math.min(1, size / 2 - 2 - d + 0.5));
+      rows.set([r, g, b, Math.round(alpha * 255)], row + 1 + x * 4);
+    }
+  }
+  const chunk = (type, data) => {
+    const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+    const out = Buffer.alloc(12 + data.length);
+    out.writeUInt32BE(data.length, 0);
+    body.copy(out, 4);
+    out.writeUInt32BE(zlib.crc32(body), 8 + data.length);
+    return out;
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(size, 0);
+  header.writeUInt32BE(size, 4);
+  header.set([8, 6, 0, 0, 0], 8); // 8-bit RGBA, no interlace
+  const png = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', header),
+    chunk('IDAT', zlib.deflateSync(rows)),
+    chunk('IEND', Buffer.alloc(0))
+  ]);
+  const image = nativeImage.createFromBuffer(png);
+  swatchCache.set(hex, image);
+  return image;
+}
+
+// The renderer describes the tab; the menu reports the picked action back,
+// and the renderer owns applying it.
+ipcMain.on('tab:menu', (event, info) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win || !info?.uid) return;
+  const act = (action, value) => () => {
+    if (!event.sender.isDestroyed()) event.sender.send('tab:menu-action', { uid: info.uid, action, value });
+  };
+  const zoom = Math.round((Number(info.zoom) || 1) * 100);
+  const color = themes.isHex(info.color) ? info.color.toLowerCase() : null;
+
+  Menu.buildFromTemplate([
+    { label: String(info.name || 'Tab'), enabled: false },
+    { type: 'separator' },
+    { label: 'Reload', click: act('reload') },
+    { label: info.muted ? 'Unmute' : 'Mute', click: act('mute', !info.muted) },
+    {
+      label: `Zoom (${zoom}%)`,
+      submenu: [
+        { label: 'Zoom in', enabled: zoom < 200, click: act('zoom', 1) },
+        { label: 'Zoom out', enabled: zoom > 50, click: act('zoom', -1) },
+        { label: 'Reset to 100%', enabled: zoom !== 100, click: act('zoom', 0) }
+      ]
+    },
+    {
+      label: 'Color tag',
+      // One unbroken radio group: a separator here would split None into a
+      // group of its own, and Electron always checks something in each group.
+      submenu: [
+        { label: 'None', type: 'radio', checked: !color, click: act('color', null) },
+        ...themes.TAG_COLORS.map(([name, hex]) => ({
+          label: name, type: 'radio', checked: color === hex, icon: colorSwatch(hex), click: act('color', hex)
+        }))
+      ]
+    },
+    { label: 'Rename…', click: act('rename') },
+    { type: 'separator' },
+    { label: info.horizontal ? 'Move left' : 'Move up', enabled: info.index > 0, click: act('move', -1) },
+    { label: info.horizontal ? 'Move right' : 'Move down', enabled: info.index < info.count - 1, click: act('move', 1) },
+    { type: 'separator' },
+    { label: 'Remove from Ybochat', click: act('remove') }
+  ]).popup({ window: win });
 });
 
 ipcMain.handle('screenshare:sources', async () => {

@@ -12,23 +12,55 @@
   </div>
   <div class="settings-body">
     <div class="settings-group">
-      <h3>Layout</h3>
-      <label class="switch-row"><input type="checkbox" id="toggle-horizontal-tabs"> Use horizontal tabs</label>
-      <label class="switch-row"><input type="checkbox" id="toggle-streamer-mode"> Streamer mode (hide from OBS)</label>
+      <h3>Appearance</h3>
+
+      <div class="field">
+        <span class="field-label" id="theme-label">Theme</span>
+        <div class="theme-grid" id="theme-picker" role="group" aria-labelledby="theme-label"></div>
+      </div>
+
+      <div class="field">
+        <span class="field-label" id="accent-label">Accent color</span>
+        <div class="swatches" id="accent-picker" role="group" aria-labelledby="accent-label"></div>
+      </div>
+
+      <div class="field">
+        <span class="field-label" id="layout-label">Tabs</span>
+        <div class="segmented" id="layout-picker" role="group" aria-labelledby="layout-label"></div>
+      </div>
+
+      <div class="field sidebar-only">
+        <span class="field-label" id="size-label">Tab size</span>
+        <div class="segmented" id="size-picker" role="group" aria-labelledby="size-label"></div>
+      </div>
+
+      <div class="field sidebar-only">
+        <span class="field-label" id="shape-label">Tab shape</span>
+        <div class="segmented" id="shape-picker" role="group" aria-labelledby="shape-label"></div>
+      </div>
+
+      <label class="switch-row sidebar-only"><input type="checkbox" id="toggle-show-names"> Show names under sidebar icons</label>
+
+      <p class="settings-hint">Drag tabs to reorder them. Right-click a tab to rename it, give it a color tag, zoom, or mute it.</p>
+      <button type="button" class="link-button" id="reset-appearance">Reset appearance</button>
     </div>
+
     <div class="settings-group">
       <h3>System</h3>
+      <label class="switch-row"><input type="checkbox" id="toggle-streamer-mode"> Streamer mode (hide from OBS)</label>
       <label class="switch-row"><input type="checkbox" id="toggle-close-to-tray"> Close to system tray</label>
       <label class="switch-row"><input type="checkbox" id="toggle-auto-start"> Start Ybochat with Windows</label>
       <label class="switch-row"><input type="checkbox" id="toggle-start-minimized"> Start minimized to the tray</label>
       <p class="settings-hint sub" id="start-minimized-note" hidden>Ybochat launches hidden. Open it again from the tray icon.</p>
     </div>
+
     <div class="settings-group">
       <h3>Apps</h3>
       <p class="settings-hint">Use <span class="inline-plus">+</span> to add another account. Each one gets its own container, so logins stay separate.</p>
       <div id="apps-list"></div>
     </div>
   </div>
+  <script src="./themes.js"></script>
   <script src="./apps.js"></script>
   <script src="./settings.js"></script>
 </body>

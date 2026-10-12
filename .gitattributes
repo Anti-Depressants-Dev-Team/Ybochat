@@ -1,0 +1,2 @@
+# Shell scripts are served raw to Linux machines, so they must keep LF endings.
+*.sh text eol=lf

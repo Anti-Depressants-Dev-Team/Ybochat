@@ -96,6 +96,11 @@
     return cfg ? cfg.name : account.uid;
   }
 
+  // Zoom levels a tab can step through, matching what browsers offer.
+  const ZOOM_STEPS = [0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
+  const MIN_ZOOM = ZOOM_STEPS[0];
+  const MAX_ZOOM = ZOOM_STEPS[ZOOM_STEPS.length - 1];
+
   // Drops anything that no longer maps to a known app and fills in the fields
   // older settings files did not have.
   function normalizeAccounts(list) {
@@ -104,15 +109,20 @@
     return list.reduce((out, entry) => {
       if (!entry || !appById(entry.app) || !entry.uid || seen.has(entry.uid)) return out;
       seen.add(entry.uid);
+      const zoom = Number(entry.zoom);
       out.push({
         uid: String(entry.uid),
         app: entry.app,
         name: entry.name || appById(entry.app).name,
-        partition: entry.partition || null
+        partition: entry.partition || null,
+        // Per-tab customizations from the tab's right-click menu.
+        color: /^#[0-9a-f]{6}$/i.test(entry.color || '') ? entry.color.toLowerCase() : null,
+        zoom: zoom >= MIN_ZOOM && zoom <= MAX_ZOOM ? zoom : 1,
+        muted: !!entry.muted
       });
       return out;
     }, []);
   }
 
-  global.YboApps = { APPS, ICONS, appById, createIcon, makeAccount, accountLabel, normalizeAccounts };
+  global.YboApps = { APPS, ICONS, ZOOM_STEPS, appById, createIcon, makeAccount, accountLabel, normalizeAccounts };
 })(window);

@@ -1,6 +1,6 @@
 {
   "name": "ybochat",
-  "version": "2.2.0",
+  "version": "2.4.0",
   "description": "Multi-platform chat client",
   "main": "main.js",
   "scripts": {
@@ -51,6 +51,7 @@
       "main.js",
       "preload.js",
       "renderer.js",
+      "themes.js",
       "apps.js",
       "settings.js",
       "share-picker.js",

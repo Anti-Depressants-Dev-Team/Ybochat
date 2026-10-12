@@ -9,6 +9,18 @@ All-in-one chat client that loads multiple messaging apps in a clean, unified wi
   <img src="chat.png" width="128" alt="Ybochat icon">
 </p>
 
+## Quick install
+
+**Linux** — one command, using the [CLI installer](install.sh):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Anti-Depressants-Dev-Team/Ybochat/main/install.sh | bash
+```
+
+**Windows** — grab `Ybochat-Setup-x.x.x.exe` from [Releases](https://github.com/Anti-Depressants-Dev-Team/Ybochat/releases/latest).
+
+More options (AppImage, specific versions, uninstall) are under [Install](#install).
+
 ## Apps
 
 13 chat services as toggleable tabs:
@@ -41,10 +53,30 @@ Vencord is a third-party Discord modification and is not affiliated with Discord
 ## Install
 
 ### Windows
-Download `Ybochat Setup x.x.x.exe` from [Releases](https://github.com/Anti-Depressants-Dev-Team/Ybochat/releases) and run the installer.
+Download `Ybochat-Setup-x.x.x.exe` from [Releases](https://github.com/Anti-Depressants-Dev-Team/Ybochat/releases) and run the installer.
 
 ### Linux
-Download the `.deb`, `.rpm`, or `.AppImage` from [Releases](https://github.com/Anti-Depressants-Dev-Team/Ybochat/releases).
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Anti-Depressants-Dev-Team/Ybochat/main/install.sh | bash
+```
+
+The [installer](install.sh) picks the right package for your system: the `.deb` on Debian/Ubuntu, the `.rpm` on Fedora/openSUSE, and the AppImage everywhere else (or when there is no `sudo`). Every download is checked against the SHA-512 published with the release. You can [read the script](https://raw.githubusercontent.com/Anti-Depressants-Dev-Team/Ybochat/main/install.sh) before running it.
+
+Pass options after `bash -s --`:
+
+```bash
+# Force a format: --appimage (no root needed), --deb or --rpm
+curl -fsSL https://raw.githubusercontent.com/Anti-Depressants-Dev-Team/Ybochat/main/install.sh | bash -s -- --appimage
+
+# Install a specific release
+curl -fsSL https://raw.githubusercontent.com/Anti-Depressants-Dev-Team/Ybochat/main/install.sh | bash -s -- --version 2.1.0
+
+# Uninstall (settings and logins are kept)
+curl -fsSL https://raw.githubusercontent.com/Anti-Depressants-Dev-Team/Ybochat/main/install.sh | bash -s -- --uninstall
+```
+
+Prefer to install by hand? Download the `.deb`, `.rpm`, or `.AppImage` from [Releases](https://github.com/Anti-Depressants-Dev-Team/Ybochat/releases):
 
 ```bash
 # Debian/Ubuntu

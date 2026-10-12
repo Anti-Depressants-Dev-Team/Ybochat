@@ -110,6 +110,7 @@ document.addEventListener('keydown', e => {
 // Closing the window is handled in the main process, which declines the request.
 
 async function init() {
+  window.YboThemes.applyAppearance(await window.electronAPI.loadSettings());
   audioRow.hidden = !(await window.electronAPI.loopbackSupported());
   try {
     sources = await window.electronAPI.getShareSources();

@@ -1,14 +1,22 @@
 const { APPS, appById, createIcon, makeAccount, accountLabel, normalizeAccounts } = window.YboApps;
+const { THEMES, ACCENTS, DEFAULTS, isHex, normalizeAppearance, applyAppearance } = window.YboThemes;
 
 const appsList = document.getElementById('apps-list');
 const toggles = {
-  horizontalTabs: document.getElementById('toggle-horizontal-tabs'),
   streamerMode: document.getElementById('toggle-streamer-mode'),
   closeToTray: document.getElementById('toggle-close-to-tray'),
   autoStart: document.getElementById('toggle-auto-start'),
-  startMinimized: document.getElementById('toggle-start-minimized')
+  startMinimized: document.getElementById('toggle-start-minimized'),
+  showTabNames: document.getElementById('toggle-show-names')
 };
 const startMinimizedNote = document.getElementById('start-minimized-note');
+const pickers = {
+  theme: document.getElementById('theme-picker'),
+  accent: document.getElementById('accent-picker'),
+  layout: document.getElementById('layout-picker'),
+  size: document.getElementById('size-picker'),
+  shape: document.getElementById('shape-picker')
+};
 
 let settings = {
   accounts: [],
@@ -16,7 +24,8 @@ let settings = {
   streamerMode: false,
   closeToTray: true,
   autoStart: true,
-  startMinimized: false
+  startMinimized: false,
+  ...DEFAULTS
 };
 
 // Per-app status line, e.g. the Vencord extension download.
@@ -30,7 +39,8 @@ function adopt(incoming) {
     streamerMode: !!incoming.streamerMode,
     closeToTray: incoming.closeToTray !== false,
     autoStart: incoming.autoStart !== false,
-    startMinimized: !!incoming.startMinimized
+    startMinimized: !!incoming.startMinimized,
+    ...normalizeAppearance(incoming)
   };
 }
 
@@ -209,15 +219,105 @@ function renderApps() {
   appsList.replaceChildren(...APPS.map(buildAppBlock));
 }
 
+// ── Appearance ──────────────────────────────────────────────────────────────
+
+function optionButton(className, pressed, label, onPick) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className;
+  button.setAttribute('aria-pressed', String(pressed));
+  button.setAttribute('aria-label', label);
+  button.addEventListener('click', onPick);
+  return button;
+}
+
+// Applies here straight away for a live preview; the main window follows once
+// the save reaches it.
+function setAppearance(patch, { debounce = false } = {}) {
+  Object.assign(settings, patch);
+  renderAppearance();
+  if (debounce) saveSoon();
+  else save();
+}
+
+function renderThemes() {
+  pickers.theme.replaceChildren(...Object.entries(THEMES).map(([id, theme]) => {
+    const card = optionButton('theme-card', settings.theme === id, `${theme.label} theme`, () => setAppearance({ theme: id }));
+    const preview = document.createElement('span');
+    preview.className = 'theme-preview';
+    preview.style.setProperty('--p-bg', theme.bg);
+    preview.style.setProperty('--p-sidebar', theme.sidebar);
+    preview.style.setProperty('--p-tab', theme.tab);
+    preview.style.setProperty('--p-fg', theme.fg);
+    preview.innerHTML = '<span class="tp-sidebar"><i></i><i></i><i></i></span><span class="tp-main"><b></b><b></b><b></b></span>';
+    const name = document.createElement('span');
+    name.className = 'theme-name';
+    name.textContent = theme.label;
+    card.append(preview, name);
+    return card;
+  }));
+}
+
+function renderAccents() {
+  const presets = ACCENTS.map(([name, hex]) => {
+    const swatch = optionButton('swatch', settings.accent === hex, `${name} accent`, () => setAppearance({ accent: hex }));
+    swatch.style.setProperty('--swatch', hex);
+    swatch.title = name;
+    return swatch;
+  });
+
+  // Anything that is not a preset is a custom pick from the color dialog.
+  const isCustom = !ACCENTS.some(([, hex]) => hex === settings.accent);
+  const custom = document.createElement('label');
+  custom.className = isCustom ? 'swatch swatch-custom is-custom' : 'swatch swatch-custom';
+  custom.title = 'Custom color';
+  custom.setAttribute('aria-pressed', String(isCustom));
+  custom.style.setProperty('--swatch', settings.accent);
+  const input = document.createElement('input');
+  input.type = 'color';
+  input.value = settings.accent;
+  input.setAttribute('aria-label', 'Custom accent color');
+  // Dragging around the color dialog previews live and saves once it settles.
+  input.addEventListener('input', () => { if (isHex(input.value)) setAppearance({ accent: input.value.toLowerCase() }, { debounce: true }); });
+  input.addEventListener('change', () => save());
+  custom.appendChild(input);
+
+  pickers.accent.replaceChildren(...presets, custom);
+}
+
+function renderSegmented(container, options, current, apply) {
+  container.replaceChildren(...options.map(([value, label]) => {
+    const button = optionButton('', value === current, label, () => apply(value));
+    button.textContent = label;
+    return button;
+  }));
+}
+
+function renderAppearance() {
+  applyAppearance(settings);
+  renderThemes();
+  renderAccents();
+  renderSegmented(pickers.layout, [[false, 'Sidebar'], [true, 'Top']], settings.horizontalTabs,
+    value => setAppearance({ horizontalTabs: value }));
+  renderSegmented(pickers.size, [['compact', 'Compact'], ['normal', 'Normal'], ['large', 'Large']], settings.tabSize,
+    value => setAppearance({ tabSize: value }));
+  renderSegmented(pickers.shape, [['round', 'Round'], ['rounded', 'Rounded'], ['square', 'Square']], settings.tabShape,
+    value => setAppearance({ tabShape: value }));
+  toggles.showTabNames.checked = settings.showTabNames;
+  document.querySelectorAll('.sidebar-only').forEach(el => el.classList.toggle('disabled', settings.horizontalTabs));
+}
+
+document.getElementById('reset-appearance').addEventListener('click', () => {
+  setAppearance({ ...DEFAULTS, horizontalTabs: false });
+});
+
+// ── System toggles ──────────────────────────────────────────────────────────
+
 function renderToggles() {
-  for (const [key, input] of Object.entries(toggles)) input.checked = settings[key];
+  for (const key of ['streamerMode', 'closeToTray', 'autoStart', 'startMinimized']) toggles[key].checked = settings[key];
   startMinimizedNote.hidden = !settings.startMinimized;
 }
 
-toggles.horizontalTabs.addEventListener('change', e => {
-  settings.horizontalTabs = e.target.checked;
-  save();
-});
 toggles.streamerMode.addEventListener('change', async e => {
   settings.streamerMode = e.target.checked;
   await window.electronAPI.setStreamerMode(settings.streamerMode);
@@ -236,15 +336,18 @@ toggles.startMinimized.addEventListener('change', e => {
   startMinimizedNote.hidden = !settings.startMinimized;
   save();
 });
+toggles.showTabNames.addEventListener('change', e => setAppearance({ showTabNames: e.target.checked }));
 
 window.electronAPI.onSettingsChanged(incoming => {
   adopt(incoming);
+  renderAppearance();
   renderToggles();
   renderApps();
 });
 
 async function init() {
   adopt(await window.electronAPI.loadSettings());
+  renderAppearance();
   renderToggles();
   renderApps();
 }
